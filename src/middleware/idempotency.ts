@@ -24,11 +24,7 @@ const IDEMPOTENCY_PREFIX = 'idempotency:';
  * 3. If key exists with status 'processing' → return 409 Conflict
  * 4. If key is new → mark as 'processing', proceed, then cache the response
  */
-export async function idempotency(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
+export async function idempotency(req: Request, res: Response, next: NextFunction): Promise<void> {
   const idempotencyKey = req.headers['idempotency-key'] as string | undefined;
 
   // No key provided — proceed without idempotency
@@ -84,18 +80,20 @@ export async function idempotency(
     await redis.set(redisKey, processingRecord, 'EX', ttlSeconds, 'NX');
 
     // Also persist in PostgreSQL for durability
-    await prisma.idempotencyKey.create({
-      data: {
-        id: generateId(),
-        key: idempotencyKey,
-        requestPath: req.path,
-        requestBodyHash: requestHash,
-        status: 'PROCESSING',
-        expiresAt: new Date(Date.now() + ttlSeconds * 1000),
-      },
-    }).catch(() => {
-      // Ignore duplicate key errors (race condition handled by Redis NX)
-    });
+    await prisma.idempotencyKey
+      .create({
+        data: {
+          id: generateId(),
+          key: idempotencyKey,
+          requestPath: req.path,
+          requestBodyHash: requestHash,
+          status: 'PROCESSING',
+          expiresAt: new Date(Date.now() + ttlSeconds * 1000),
+        },
+      })
+      .catch(() => {
+        // Ignore duplicate key errors (race condition handled by Redis NX)
+      });
 
     // Intercept the response to cache it
     const originalJson = res.json.bind(res);

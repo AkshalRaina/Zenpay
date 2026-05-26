@@ -27,13 +27,18 @@ export class WebhookController {
         return;
       }
 
-      await webhookService.processWebhook(payload, signature);
+      const result = await webhookService.processWebhook(payload, signature);
+
+      const message =
+        result.status === 'ignored'
+          ? 'Webhook ignored (invalid state transition or duplicate)'
+          : 'Webhook processed successfully';
 
       // Always return 200 to acknowledge receipt
       res.status(StatusCodes.OK).json({
         success: true,
         data: { received: true },
-        message: 'Webhook processed successfully',
+        message,
       });
     } catch (error) {
       next(error);

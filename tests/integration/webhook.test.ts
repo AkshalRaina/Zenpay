@@ -12,7 +12,7 @@ describe('Webhook Integration', () => {
     // Create a dummy payment to receive webhooks for
     const payment = await prisma.payment.create({
       data: {
-        id: 'web-test-pay-1',
+        id: crypto.randomUUID(),
         amount: '100',
         currency: 'USD',
         merchantId: 'merch_web',
@@ -31,9 +31,11 @@ describe('Webhook Integration', () => {
 
   it('should process a valid success webhook', async () => {
     const payload = JSON.stringify({
+      eventId: 'evt_success_123',
       paymentId,
       status: 'success',
       gatewayReference: 'gw_success_123',
+      timestamp: new Date().toISOString(),
     });
 
     const signature = 'sha256=' + crypto.createHmac('sha256', config.WEBHOOK_SECRET).update(payload).digest('hex');
@@ -56,9 +58,11 @@ describe('Webhook Integration', () => {
 
   it('should reject a webhook with invalid signature', async () => {
     const payload = JSON.stringify({
+      eventId: 'evt_invalid_sig',
       paymentId,
       status: 'success',
       gatewayReference: 'gw_success_123',
+      timestamp: new Date().toISOString(),
     });
 
     const response = await request(app)
@@ -76,9 +80,11 @@ describe('Webhook Integration', () => {
     // The previous test already transitioned it to SUCCESS.
     // Transitioning from SUCCESS -> SUCCESS is invalid, but webhook logic should just ignore it and return 200 to acknowledge.
     const payload = JSON.stringify({
+      eventId: 'evt_success_123',
       paymentId,
       status: 'success',
       gatewayReference: 'gw_success_123',
+      timestamp: new Date().toISOString(),
     });
 
     const signature = 'sha256=' + crypto.createHmac('sha256', config.WEBHOOK_SECRET).update(payload).digest('hex');

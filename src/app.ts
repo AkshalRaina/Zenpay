@@ -39,17 +39,8 @@ app.use(rateLimiter);
 // ─── API Routes ───
 app.use('/api/v1', apiRoutes);
 
-// ─── Root Endpoint ───
-app.get('/', (_req, res) => {
-  res.json({
-    success: true,
-    data: {
-      name: 'Payment Processing System',
-      version: '1.0.0',
-      docs: '/api/v1/health',
-    },
-  });
-});
+// ─── Static Frontend UI ───
+app.use(express.static('public'));
 
 // ─── 404 Handler ───
 app.use(notFoundHandler);

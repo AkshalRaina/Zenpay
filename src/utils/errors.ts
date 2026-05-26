@@ -39,6 +39,15 @@ export class ValidationError extends AppError {
 }
 
 /**
+ * 401 Unauthorized — authentication or signature failure.
+ */
+export class UnauthorizedError extends AppError {
+  constructor(message: string = 'Unauthorized', details?: Record<string, unknown>) {
+    super(message, StatusCodes.UNAUTHORIZED, 'UNAUTHORIZED', true, details);
+  }
+}
+
+/**
  * 404 Not Found — resource does not exist.
  */
 export class NotFoundError extends AppError {

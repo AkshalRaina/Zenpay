@@ -8,9 +8,6 @@ const router = Router();
  *
  * POST /gateway  → Receive gateway callback
  */
-router.post(
-  '/gateway',
-  webhookController.handleGatewayWebhook.bind(webhookController),
-);
+router.post('/gateway', webhookController.handleGatewayWebhook.bind(webhookController));
 
 export { router as webhookRoutes };

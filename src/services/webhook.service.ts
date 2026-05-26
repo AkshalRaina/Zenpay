@@ -3,18 +3,9 @@ import { prisma } from '../config/database';
 import { config } from '../config';
 import { withLock, paymentLockKey } from '../utils/distributedLock';
 import { createChildLogger } from '../utils/logger';
-import {
-  verifyWebhookSignature,
-  isValidStateTransition,
-  generateId,
-} from '../utils/helpers';
-import {
-  PaymentStatus,
-  PaymentStatusType,
-  TERMINAL_STATES,
-  EventType,
-} from '../utils/constants';
-import { ValidationError } from '../utils/errors';
+import { verifyWebhookSignature, isValidStateTransition, generateId } from '../utils/helpers';
+import { PaymentStatus, PaymentStatusType, TERMINAL_STATES, EventType } from '../utils/constants';
+import { UnauthorizedError } from '../utils/errors';
 import { WebhookPayload } from '../types';
 
 /**
@@ -34,7 +25,10 @@ export class WebhookService {
    * @param payload - Parsed webhook body
    * @param signature - X-Webhook-Signature header value
    */
-  async processWebhook(payload: WebhookPayload, signature: string): Promise<void> {
+  async processWebhook(
+    payload: WebhookPayload,
+    signature: string,
+  ): Promise<{ status: 'processed' | 'ignored' }> {
     const log = createChildLogger({
       paymentId: payload.paymentId,
       eventId: payload.eventId,
@@ -49,7 +43,7 @@ export class WebhookService {
     const payloadString = JSON.stringify(payload);
     if (!verifyWebhookSignature(payloadString, signature, config.WEBHOOK_SECRET)) {
       log.warn('Webhook signature verification failed');
-      throw new ValidationError('Invalid webhook signature');
+      throw new UnauthorizedError('Invalid webhook signature');
     }
 
     // 2. Check for duplicate event
@@ -75,11 +69,11 @@ export class WebhookService {
         },
       });
 
-      return; // Skip processing
+      return { status: 'ignored' }; // Skip processing
     }
 
     // 3. Acquire lock and process
-    await withLock(paymentLockKey(payload.paymentId), config.LOCK_TTL_MS, async () => {
+    return withLock(paymentLockKey(payload.paymentId), config.LOCK_TTL_MS, async () => {
       // 4. Fetch payment
       const payment = await prisma.payment.findUnique({
         where: { id: payload.paymentId },
@@ -88,12 +82,8 @@ export class WebhookService {
       if (!payment) {
         log.error('Payment not found for webhook');
 
-        await this.recordWebhookEvent(
-          payload,
-          signature,
-          'REJECTED',
-        );
-        return;
+        await this.recordWebhookEvent(payload, signature, 'REJECTED');
+        return { status: 'ignored' };
       }
 
       // 5. Check if payment is already in a terminal state
@@ -103,19 +93,13 @@ export class WebhookService {
           webhookStatus: payload.status,
         });
 
-        await this.recordWebhookEvent(
-          payload,
-          signature,
-          'REJECTED',
-        );
-        return;
+        await this.recordWebhookEvent(payload, signature, 'REJECTED');
+        return { status: 'ignored' };
       }
 
       // 6. Determine target state
       const targetStatus =
-        payload.status === 'success'
-          ? PaymentStatus.SUCCESS
-          : PaymentStatus.FAILED;
+        payload.status === 'success' ? PaymentStatus.SUCCESS : PaymentStatus.FAILED;
 
       // 7. Validate state transition
       const currentStatus = payment.status as PaymentStatusType;
@@ -125,16 +109,12 @@ export class WebhookService {
           targetStatus,
         });
 
-        await this.recordWebhookEvent(
-          payload,
-          signature,
-          'REJECTED',
-        );
-        return;
+        await this.recordWebhookEvent(payload, signature, 'REJECTED');
+        return { status: 'ignored' };
       }
 
       // 8. Update payment state and record webhook (atomic)
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         // Update payment
         const updateData: Prisma.PaymentUpdateInput = {
           status: targetStatus,
@@ -190,6 +170,7 @@ export class WebhookService {
         from: currentStatus,
         to: targetStatus,
       });
+      return { status: 'processed' };
     });
   }
 

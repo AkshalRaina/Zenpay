@@ -7,17 +7,8 @@ import { CircuitBreaker } from '../utils/circuitBreaker';
 import { withLock, paymentLockKey } from '../utils/distributedLock';
 import { logger, createChildLogger } from '../utils/logger';
 import { generateId, isValidStateTransition, isRetryableError } from '../utils/helpers';
-import {
-  PaymentStatus,
-  PaymentStatusType,
-  TERMINAL_STATES,
-  EventType,
-} from '../utils/constants';
-import {
-  NotFoundError,
-  ConflictError,
-  GatewayError,
-} from '../utils/errors';
+import { PaymentStatus, PaymentStatusType, TERMINAL_STATES, EventType } from '../utils/constants';
+import { NotFoundError, ConflictError, GatewayError } from '../utils/errors';
 import {
   CreatePaymentRequest,
   PaymentResponse,
@@ -45,7 +36,10 @@ export class PaymentService {
   /**
    * Create a new payment and enqueue it for processing.
    */
-  async createPayment(data: CreatePaymentRequest, idempotencyKey?: string): Promise<PaymentResponse> {
+  async createPayment(
+    data: CreatePaymentRequest,
+    idempotencyKey?: string,
+  ): Promise<PaymentResponse> {
     const paymentId = generateId();
     const log = createChildLogger({ paymentId });
 
@@ -56,7 +50,7 @@ export class PaymentService {
     });
 
     // Create payment + initial event in a transaction
-    const payment = await prisma.$transaction(async (tx) => {
+    const payment = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const created = await tx.payment.create({
         data: {
           id: paymentId,
@@ -360,10 +354,7 @@ export class PaymentService {
       );
     }
 
-    if (
-      payment.status !== PaymentStatus.CREATED &&
-      payment.status !== PaymentStatus.PENDING
-    ) {
+    if (payment.status !== PaymentStatus.CREATED && payment.status !== PaymentStatus.PENDING) {
       throw new ConflictError(
         `Payment in '${payment.status}' state cannot be cancelled — only CREATED or PENDING payments can be cancelled`,
       );
@@ -392,7 +383,7 @@ export class PaymentService {
     expectedVersion: number,
     additionalData?: Record<string, unknown>,
   ) {
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       return this.transitionStateInTx(
         tx,
         paymentId,
@@ -418,10 +409,11 @@ export class PaymentService {
   ) {
     // Validate state transition
     if (!isValidStateTransition(fromStatus, toStatus)) {
-      throw new ConflictError(
-        `Invalid state transition from '${fromStatus}' to '${toStatus}'`,
-        { paymentId, fromStatus, toStatus },
-      );
+      throw new ConflictError(`Invalid state transition from '${fromStatus}' to '${toStatus}'`, {
+        paymentId,
+        fromStatus,
+        toStatus,
+      });
     }
 
     // Build update data
@@ -480,10 +472,7 @@ export class PaymentService {
 
       return updated;
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2025'
-      ) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
         throw new ConflictError(
           `Optimistic lock conflict — payment '${paymentId}' was modified concurrently`,
           { paymentId, expectedVersion },

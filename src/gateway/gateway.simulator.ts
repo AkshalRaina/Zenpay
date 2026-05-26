@@ -56,9 +56,7 @@ export class GatewaySimulator {
    * Register a callback function for async webhook delivery.
    * Called when the gateway returns a "pending" status.
    */
-  onWebhook(
-    callback: (paymentId: string, success: boolean, reference: string) => void,
-  ): void {
+  onWebhook(callback: (paymentId: string, success: boolean, reference: string) => void): void {
     this.webhookCallback = callback;
   }
 
@@ -154,8 +152,7 @@ export class GatewaySimulator {
     startTime: number,
   ): Promise<GatewayPaymentResponse> {
     const delay =
-      this.config.minDelayMs +
-      Math.random() * (this.config.maxDelayMs - this.config.minDelayMs);
+      this.config.minDelayMs + Math.random() * (this.config.maxDelayMs - this.config.minDelayMs);
 
     logger.debug('Gateway: Delayed success', { delayMs: Math.round(delay) });
     await sleep(delay);
@@ -196,11 +193,7 @@ export class GatewaySimulator {
     await sleep(this.config.timeoutMs + 1000); // Exceed timeout
 
     // This should be caught by the caller's timeout logic
-    throw new GatewayError(
-      'Gateway request timed out',
-      GatewayErrorCode.GATEWAY_TIMEOUT,
-      true,
-    );
+    throw new GatewayError('Gateway request timed out', GatewayErrorCode.GATEWAY_TIMEOUT, true);
   }
 
   /**

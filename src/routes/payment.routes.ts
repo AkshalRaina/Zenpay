@@ -24,21 +24,12 @@ router.post(
 );
 
 // Get payment by ID
-router.get(
-  '/:id',
-  paymentController.getPayment.bind(paymentController),
-);
+router.get('/:id', paymentController.getPayment.bind(paymentController));
 
 // List payments
-router.get(
-  '/',
-  paymentController.listPayments.bind(paymentController),
-);
+router.get('/', paymentController.listPayments.bind(paymentController));
 
 // Cancel payment
-router.post(
-  '/:id/cancel',
-  paymentController.cancelPayment.bind(paymentController),
-);
+router.post('/:id/cancel', paymentController.cancelPayment.bind(paymentController));
 
 export { router as paymentRoutes };

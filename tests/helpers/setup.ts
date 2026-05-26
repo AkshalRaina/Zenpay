@@ -29,8 +29,8 @@ beforeAll(async () => {
 afterAll(async () => {
   // Clean up connections after tests
   await disconnectDatabase();
-  await disconnectRedis();
   await closeQueues();
+  await disconnectRedis();
 });
 
 afterEach(async () => {

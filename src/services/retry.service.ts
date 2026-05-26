@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
 import { paymentProducer } from '../queue/payment.producer';
 import { createChildLogger } from '../utils/logger';
@@ -50,7 +51,7 @@ export class RetryService {
       });
 
       // Transition to PERMANENTLY_FAILED
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         await tx.payment.update({
           where: { id: paymentId, version: payment.version },
           data: {
@@ -98,7 +99,7 @@ export class RetryService {
       return;
     }
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.payment.update({
         where: { id: paymentId, version: payment.version },
         data: {
@@ -150,7 +151,7 @@ export class RetryService {
     }
 
     // Transition to PENDING
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.payment.update({
         where: { id: paymentId, version: payment.version },
         data: {

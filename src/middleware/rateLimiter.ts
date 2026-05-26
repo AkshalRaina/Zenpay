@@ -17,11 +17,7 @@ const RATE_LIMIT_PREFIX = 'ratelimit:';
  *
  * Uses a sorted set in Redis with timestamps as scores for the sliding window.
  */
-export async function rateLimiter(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
+export async function rateLimiter(req: Request, res: Response, next: NextFunction): Promise<void> {
   const ip = req.ip || req.socket.remoteAddress || 'unknown';
   const key = `${RATE_LIMIT_PREFIX}${ip}`;
   const windowMs = config.RATE_LIMIT_WINDOW_MS;

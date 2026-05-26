@@ -13,12 +13,7 @@ import { StatusCodes } from 'http-status-codes';
  * Logs all errors with context. Non-operational errors are logged at 'error' level
  * with full stack traces.
  */
-export function errorHandler(
-  err: Error,
-  req: Request,
-  res: Response,
-  _next: NextFunction,
-): void {
+export function errorHandler(err: Error, req: Request, res: Response, _next: NextFunction): void {
   const correlationId = req.headers['x-request-id'] as string;
 
   if (err instanceof AppError) {
@@ -65,9 +60,7 @@ export function errorHandler(
     error: {
       code: 'INTERNAL_ERROR',
       message:
-        process.env.NODE_ENV === 'development'
-          ? err.message
-          : 'An unexpected error occurred',
+        process.env.NODE_ENV === 'development' ? err.message : 'An unexpected error occurred',
     },
   });
 }

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity Payments</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+                <h1>Antigravity Payments</h1>
+            </div>
+            <div class="status-indicator">
+                <span class="dot pulse"></span>
+                <span>System Online</span>
+            </div>
+        </header>
+
+        <main>
+            <!-- Create Payment Section -->
+            <section class="card payment-form">
+                <h2>Initiate Payment</h2>
+                <form id="paymentForm">
+                    <div class="form-group">
+                        <label for="amount">Amount</label>
+                        <div class="input-wrapper">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" id="amount" value="150.50" step="0.01" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="currency">Currency</label>
+                            <select id="currency">
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                                <option value="GBP">GBP</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="customerEmail">Customer Email</label>
+                            <input type="email" id="customerEmail" value="demo@example.com" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="idempotencyKey">
+                            Idempotency Key 
+                            <span class="tooltip" title="Ensures safe retries without double-charging">ℹ️</span>
+                        </label>
+                        <div class="input-with-action">
+                            <input type="text" id="idempotencyKey" readonly>
+                            <button type="button" id="refreshKeyBtn" class="icon-btn" title="Generate New Key">
+                                ↻
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="primary-btn" id="submitBtn">
+                        <span class="btn-text">Process Payment</span>
+                        <div class="spinner hidden"></div>
+                    </button>
+                </form>
+            </section>
+
+            <!-- Latest Transaction Section -->
+            <section class="card transaction-tracker">
+                <div class="tracker-header">
+                    <h2>Live Tracking</h2>
+                    <span id="activePaymentId" class="mono-text text-muted">No active payment</span>
+                </div>
+                
+                <div class="status-stepper" id="statusStepper">
+                    <div class="step" data-step="CREATED">
+                        <div class="step-icon">1</div>
+                        <div class="step-label">Created</div>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step" data-step="PENDING">
+                        <div class="step-icon">2</div>
+                        <div class="step-label">Pending</div>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step" data-step="PROCESSING">
+                        <div class="step-icon">3</div>
+                        <div class="step-label">Processing</div>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step" data-step="FINAL">
+                        <div class="step-icon">4</div>
+                        <div class="step-label" id="finalStatusLabel">Result</div>
+                    </div>
+                </div>
+
+                <div class="event-logs" id="eventLogs">
+                    <div class="empty-state">Submit a payment to see real-time events</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
